@@ -1,0 +1,36 @@
+{% extends layout_template  %}
+
+{% block title %}{{ user.username }}{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>
+            View user
+        </h1>
+    </div>
+    <div class="panel panel-success">
+        <div class="panel-heading">
+            <div class="pull-right">
+                <img src="{{ user.getGravatarUrl(60) }}" width="60" height="60" border=0 />
+            </div>
+            <h1>{{ user.username }}</h1>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>name: </dt>
+                <dd>{{ user.username }}</dd>
+                <dt>Registered: </dt>
+                <dd>{{ user.timeCreated|date('F j, Y') }}</dd>
+
+                <dt>roles: </dt>
+                <dd>
+                    <ul>
+                        {% for role in user.getRoles %}
+                            <li>{{ role }}</li>
+                        {% endfor %}
+                    </ul>
+                </dd>
+            </dl>
+        </div>
+    </div>
+{% endblock %}

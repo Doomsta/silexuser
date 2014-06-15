@@ -1,0 +1,8 @@
+/phpunit.xml
+/composer.phar
+/vendor
+/coverage
+/composer.lock
+/.idea
+/*.iml
+atlassian-ide-plugin.xml

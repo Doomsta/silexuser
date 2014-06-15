@@ -1,0 +1,33 @@
+{% extends layout_template  %}
+
+{% block title %}List users{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>
+            List users <br />
+            <small>{{ users|length }} found</small>
+        </h1>
+    </div>
+    {% for user in users %}
+        <div class="user">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <a href="{{ path('user.view', {'id': user.id}) }}">{{ user.username }}</a>
+                </div>
+                <div class="panel-body">
+                    <div class="pull-left avatar">
+                    <a class="media-object " href="{{ path('user.view', {'id': user.id}) }}">
+                        <img src="{{ user.getGravatarUrl(60) }}" width="60" height="60" border=0>
+                    </a>
+                    </div>
+                    <ul>
+                    {% for role in user.getRoles %}
+                        <li>{{ role }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

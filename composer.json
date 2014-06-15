@@ -1,0 +1,29 @@
+{
+    "name": "doomsta/silexuser",
+    "description": "silex user with orm",
+    "keywords": ["silex, user"],
+    "homepage": "https://github.com/doomsta/silexuser",
+    "license": "MIT",
+    "version": "0.1.0",
+    "authors": [
+        {
+            "name": "Andre Randel",
+            "email": "andreRandel2k7@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.3.3",
+        "silex/silex": "~1.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "3.7.*",
+        "squizlabs/php_codesniffer": "dev-master"
+    },
+    "autoload": {
+        "psr-0": {
+            "Doomsta\\": "src/"
+        }
+    }
+}

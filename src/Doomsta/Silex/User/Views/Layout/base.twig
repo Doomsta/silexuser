@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% block head %}
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+        <title>{% block title %}{{ title }}{% endblock %}</title>
+        <style type="text/css">
+            body {
+                padding-top: 50px;
+            }
+        </style>
+        <style type="text/css">
+            .user {
+                width: 45%;
+                float: left;
+                margin-right: 5%;
+            }
+            .avatar {
+                border: 1px solid #101010;
+                margin-right: 20px;
+            }
+        </style>
+    {% endblock %}
+</head>
+<body>
+{% block navbar %}
+    {% include '@user/Misc/navbar.twig' %}
+{% endblock %}
+<div class="container">
+    {% block flashbag %}
+        {% include '@user/Misc/notifications.twig' %}
+    {% endblock %}
+    <div class="row">
+        <div class="col-lg-3">
+            {% block widgets %}
+            {% endblock %}
+        </div>
+        <div class="col-lg-9">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+</body>
+</html>
