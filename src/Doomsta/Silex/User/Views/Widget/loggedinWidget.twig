@@ -14,7 +14,9 @@
                             <li>{{ role }}</li>
                         {% endfor %}
                     </ul>
-                    <button type="button" class="btn btn-default pull-right">Logout</button>
+                    <a href="{{ path("user.logout") }}">
+                        <button type="button" class="btn btn-default pull-right">Logout</button>
+                    </a>
                 </div>
             </div>
         </div>

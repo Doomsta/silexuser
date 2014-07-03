@@ -1,6 +1,6 @@
 <?php
 
-namespace SilexUser;
+namespace Doomsta\Silex\User;
 
 class Entity
 {
