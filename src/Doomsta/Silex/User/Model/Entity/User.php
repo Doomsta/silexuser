@@ -56,11 +56,12 @@ class User implements UserInterface
      * Constructor.
      * @param string $username
      */
-    public function __construct($username)
+    public function __construct($username = 'no one')
     {
         $this->timeCreated = time();
         $this->salt = base_convert(sha1(uniqid(mt_rand(), true)), 16, 36);
         $this->username = $username;
+        $this->roles = new ArrayCollection();
     }
 
     /**
@@ -70,9 +71,9 @@ class User implements UserInterface
      */
     public function getRoles()
     {
-        #$roles = $this->roles; //TODO
-        $roles[] = 'ROLE_USER';
-        return $roles;
+        return $this->roles->map(function (Role $role) {
+            return $role->getRole();
+        })->toArray();
     }
 
     /**
@@ -82,8 +83,7 @@ class User implements UserInterface
      */
     public function setRoles(array $roles)
     {
-        $this->roles = array();
-
+        $this->roles->clear();
         foreach ($roles as $role) {
             $this->addRole($role);
         }
@@ -92,10 +92,10 @@ class User implements UserInterface
     /**
      * Test whether the user has the given role.
      *
-     * @param string $role
+     * @param \Doomsta\Silex\User\Model\Entity\Role|string $role
      * @return bool
      */
-    public function hasRole($role)
+    public function hasRole(Role $role)
     {
         return in_array(strtoupper($role), $this->getRoles(), true);
     }
@@ -103,15 +103,11 @@ class User implements UserInterface
     /**
      * Add the given role to the user.
      *
-     * @param string $role
+     * @param \Doomsta\Silex\User\Model\Entity\Role|string $role
      */
-    public function addRole($role)
+    public function addRole(Role $role)
     {
-        $role = strtoupper($role);
-
-        if (!$this->hasRole($role)) {
-            $this->roles[] = $role;
-        }
+        $this->roles->add($role);
     }
 
     /**
@@ -121,10 +117,7 @@ class User implements UserInterface
      */
     public function removeRole($role)
     {
-        if (false !== $key = array_search(strtoupper($role), $this->roles, true)) {
-            unset($this->roles[$key]);
-            $this->roles = array_values($this->roles);
-        }
+        $this->roles->removeElement($role);
     }
 
     /**

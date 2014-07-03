@@ -1,0 +1,25 @@
+{% block form_row %}
+{% spaceless %}
+  <div class="form-group{% if errors|length > 0 %} has-error{% endif %}">
+    {{ form_label(form) }}
+    {{ form_widget(form, { attr: { class: 'form-control' } }) }}
+    {{ form_errors(form) }}
+  </div>
+{% endspaceless %}
+{% endblock form_row %}
+
+{% block form_errors %}
+{% spaceless %}
+    {% if errors|length > 0 %}
+    {% set error = errors|first %}
+      {% if form.parent is empty %}
+        <div class="alert alert-dismissable alert-danger">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          {{ error.message }}
+        </div>
+      {% else %}
+        <span class="help-block">{{ error.message }}</span>
+      {% endif %}
+    {% endif %}
+{% endspaceless %}
+{% endblock form_errors %}

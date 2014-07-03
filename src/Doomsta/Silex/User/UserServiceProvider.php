@@ -2,23 +2,29 @@
 
 namespace Doomsta\Silex\User;
 
-require_once(__DIR__ . '/Model/Reposity/UserRepository.php'); //TODO
-
-use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
-use Doomsta\Silex\User\Controller\UserController;
-use Doomsta\Silex\User\Model\Repository\UserRepository;
+use Doomsta\Silex\User\Form\UserType;
 use Silex\Application;
 use Silex\ServiceProviderInterface;
-use Silex\ControllerProviderInterface;
-use Silex\ControllerCollection;
-use Silex\ServiceControllerResolver;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Core\Authorization\Voter\RoleHierarchyVoter;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
+
+require_once(__DIR__ . '/Model/Reposity/UserRepository.php'); //TODO
+
 
 class UserServiceProvider implements ServiceProviderInterface
 {
+
+    private $defaultTemplates = array(
+        'login' => '@User/login.twig',
+        'view' => '@User/view.twig',
+        'register' => '@User/register.twig',
+        'recovery' => '@User/recovery.twig',
+        'password' => '@User/password.twig',
+       # 'layoutTemplate' => 'layouts/base.twig',
+        'layoutTemplate' => '@User/Layout/base.twig',
+        'mail_reset' => '@User/mail_reset.twig',
+    );
+
+
     /**
      * Registers services on the given app.
      * This method should only be used to configure services and parameters.
@@ -27,16 +33,36 @@ class UserServiceProvider implements ServiceProviderInterface
      */
     public function register(Application $app)
     {
+        if(!isset($app['user.templates'] )) {
+            $app['user.templates'] = array();
+        }
+        $app['user.templates'] = array_merge( $this->defaultTemplates, $app['user.templates']);
+
         $app['user.manager'] = $app->share(
-            function($app) {
+            function ($app) {
                 return new UserManager($app, $app['orm.em']);
             }
         );
 
-        $app['user'] = $app->share(function($app) {
+        $app['user'] = $app::share(function ($app) {
             return ($app['user.manager']->getCurrentUser());
         });
 
+        $app['user.em'] = $app::share(function () use ($app) {
+            return $app['orm.em'];
+        });
+
+        $app['user.form.registration'] = $app->protect(function () use ($app) {
+            #$encoder = $app['security.encoder_factory']->getEncoder(Entity::$user); //TODO use the generic getter
+            $encoder = new BCryptPasswordEncoder(10);
+            $type = new UserType($encoder);
+            return $app['form.factory']->create($type);
+        });
+
+        $app['user.default_role'] = $app::share(function () use ($app) {
+            return $app['user.em']->getRepository(Entity::$role)->findOneByRole('ROLE_USER');
+        });
+        $app['user.login.redirect'] = 'home';
     }
 
     /**
@@ -48,7 +74,7 @@ class UserServiceProvider implements ServiceProviderInterface
     public function boot(Application $app)
     {
         if ($app->offsetExists('twig.loader.filesystem')) {
-            $app['twig.loader.filesystem']->addPath(__DIR__ . '/Views/', 'user');
+            $app['twig.loader.filesystem']->addPath(__DIR__ . '/Views/', 'User');
         }
     }
 }

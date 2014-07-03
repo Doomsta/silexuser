@@ -1,0 +1,29 @@
+{% block registerWidget %}
+    <div class="widget registrationWidget">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Register</h3>
+            </div>
+            <div class="panel-body">
+                {% form_theme form '@User/Layout/form_theme.twig' %}
+                {% block form %}
+                    {{ form_start(form) }}
+                    {{ form_errors(form) }}
+                    {% for child in form %}
+                        {% if child.vars.name  == 'password' %}
+                            {{ form_row(child.first) }}
+                            {{ form_row(child.second) }}
+                        {% elseif child.vars.name != '_token' %}
+                            {{ form_row(child) }}
+                        {% endif %}
+                    {% endfor %}
+                    {% block buttons %}
+                        <a href="{{ path('user.login') }}" class="btn btn-link pull-right">Login</a>
+                        <button type="submit" class="btn">Submit</button>
+                    {% endblock buttons %}
+                    {{ form_end(form) }}
+                {% endblock form %}
+            </div>
+        </div>
+    </div>
+{% endblock registerWidget %}

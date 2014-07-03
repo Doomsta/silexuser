@@ -1,0 +1,23 @@
+{% block loggedinWidget %}
+    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+        <div class="widget loginWidget">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        authenticated as <a href="{{ path("user")  }}">{{ user.username }}</a>
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <p>Roles</p>
+                    <ul>
+                        {% for role in user.roles %}
+                            <li>{{ role }}</li>
+                        {% endfor %}
+                    </ul>
+                    <button type="button" class="btn btn-default pull-right">Logout</button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock loggedinWidget %}
+

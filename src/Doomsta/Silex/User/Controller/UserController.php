@@ -2,13 +2,18 @@
 
 namespace Doomsta\Silex\User\Controller;
 
+use Doctrine\DBAL\ConnectionException;
+use Doctrine\ORM\EntityManager;
 use Doomsta\Silex\User\Model\Entity\User;
 use Doomsta\Silex\User\UserManager;
+use Exception;
 use LogicException;
 use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
 use Silex\ServiceControllerResolver;
+use Symfony\Component\Form\Form;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -16,6 +21,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use InvalidArgumentException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\SecurityContext;
 
 /**
  * Controller with actions for handling form-based authentication and user management.
@@ -48,6 +54,17 @@ class UserController implements ControllerProviderInterface
         /** @var ControllerCollection $controllers */
         $controllers = $app['controllers_factory'];
 
+        // new
+
+        $controllers->get('/login', array($this, 'loginAction'))
+            ->bind('user.login');
+        $controllers->match('/register', array($this, 'registerAction'))
+            ->bind('user.register');
+        $controllers->match('/checkLogin', '')
+            ->bind('user.checkLogin');
+        $controllers->match('/recovery', array($this, 'recoveryAction'))
+            ->bind('user.recovery');
+
         $controllers->get('/', array($this, 'viewSelfAction'))
             ->bind('user')
             ->before(function(Request $request) use ($app) {
@@ -61,14 +78,6 @@ class UserController implements ControllerProviderInterface
         $controllers->get('/list', array($this, 'listAction'))
             ->bind('user.list');
 
-        $controllers->method('GET|POST')->match('/register', array($this, 'registerAction'))
-            ->bind('user.register');
-
-        $controllers->get('/login', array($this, 'loginAction'))
-            ->bind('user.login');
-
-        $controllers->method('GET|POST')->match('/login_check', function() {})
-            ->bind('user.login_check');
         $controllers->get('/logout', function() {})
             ->bind('user.logout');
 
@@ -76,39 +85,25 @@ class UserController implements ControllerProviderInterface
     }
 
     /**
-     * @param array $options
-     */
-    public function setOptions(array $options)
-    {
-
-        if (array_key_exists('layout_template', $options)) {
-            $this->layoutTemplate = $options['layout_template'];
-        }
-    }
-
-    /**
-     * @param string $layoutTemplate
-     */
-    public function setLayoutTemplate($layoutTemplate)
-    {
-        $this->layoutTemplate = $layoutTemplate;
-    }
-
-    /**
      * Login action.
      *
      * @param Application $app
-     * @param Request $request
      * @return Response
      */
-    public function loginAction(Application $app, Request $request)
+    public function loginAction(Application $app)
     {
-        return $app['twig']->render('@user/login.twig', array(
-            'layout_template' => $this->layoutTemplate,
-            'error' => $app['security.last_error']($request),
+        if ($app['security']->isGranted('IS_AUTHENTICATED_FULLY')) {
+            $path = $app['session']->get('_security.global.target_path')
+                ?: $app['url_generator']->generate($app['user.login.redirect']);
+
+            return $app->redirect($path);
+        }
+
+        return $app['twig']->render($app['user.templates']['login'], [
+            'layoutTemplate' => $app['user.templates']['layoutTemplate'],
+            'error' => $app['security.last_error']($app['request']),
             'last_username' => $app['session']->get('_security.last_username'),
-            'allowRememberMe' => isset($app['security.remember_me.response_listener']),
-        ));
+        ]);
     }
 
     /**
@@ -118,57 +113,44 @@ class UserController implements ControllerProviderInterface
      * @param Request $request
      * @return Response
      */
-    public function registerAction(Application $app, Request $request)
+    public function registerAction(Request $request, Application $app)
     {
 
-        if ($request->isMethod('POST')) {
+        /** @var Form $form */
+        $form = $app['user.form.registration']();
+        /** @var EntityManager $em */
+        $em = $app['user.em'];
+        /** @var SecurityContext $security */
+        $security = $app['security'];
+
+        $form->handleRequest($request);
+        if ($form->isValid()) {
+            $em->getConnection()->beginTransaction();
             try {
-                $user = $this->createUserFromRequest($request);
-                $this->userManager->insert($user);
-                $app['session']->getFlashBag()->set('alert', 'Account created.');
+                $user = $form->getData();
+                $user->addRole($app['user.default_role']);
+                $em->persist($user);
+                $em->flush();
+                $em->getConnection()->commit();
+                $security->setToken(new UsernamePasswordToken($user, null, 'global', $user->getRoles()));
+                $path = $app['session']->get('_security.global.target_path')
+                    ? : $app['url_generator']->generate($app['user.login.redirect']);
 
-                // Log the user in to the new account.
-                if (null !== ($current_token = $app['security']->getToken())) {
-                    $providerKey = method_exists($current_token, 'getProviderKey') ? $current_token->getProviderKey() : $current_token->getKey();
-                    $token = new UsernamePasswordToken($user, null, $providerKey);
-                    $app['security']->setToken($token);
-                }
-
-                return $app->redirect($app['url_generator']->generate('user.view', array('id' => $user->getId())));
-
-            } catch (InvalidArgumentException $e) {
-                $error = $e->getMessage();
+                return $app->redirect($path);
+            } catch (ConnectionException $e) {
+                $em->getConnection()->rollback();
+                $em->close();
+                $form->addError(new FormError(sprintf('Registration failed %s', $app['debug'] ? $e->getMessage() : null)));
+            } catch (Exception $e) {
+                $form->addError(new FormError(sprintf('Registration failed %s', $app['debug'] ? $e->getMessage() : null)));
             }
         }
-
-        return $app['twig']->render('@user/register.twig', array(
-            'layout_template' => $this->layoutTemplate,
-            'error' => isset($error) ? $error : null,
-            'name' => $request->request->get('name'),
-            'email' => $request->request->get('email'),
-        ));
+        return $app['twig']->render($app['user.templates']['register'], [
+            'layoutTemplate' => $app['user.templates']['layoutTemplate'],
+            'form' => $form->createView(),
+        ]);
     }
 
-    /**
-     * @param Request $request
-     * @return User
-     * @throws InvalidArgumentException
-     */
-    protected function createUserFromRequest(Request $request)
-    {
-        if ($request->request->get('password') != $request->request->get('confirm_password')) {
-            throw new InvalidArgumentException('Passwords don\'t match.');
-        }
-        $user = new User($request->get('name'));
-        $user->setEmail($request->get('email'));
-        $user->setPassword($request->get('password'));
-        $user = $this->userManager->createUser($request->get('name'), $request->get('password'), $request->get('email'));
-        $errors = $this->userManager->validate($user);
-        if (!empty($errors)) {
-            throw new InvalidArgumentException(implode("\n", $errors));
-        }
-        return $user;
-    }
 
     /**
      * View user action.
@@ -185,25 +167,34 @@ class UserController implements ControllerProviderInterface
         if (!$user) {
             throw new NotFoundHttpException('No user was found with that ID.');
         }
-        return $app['twig']->render('@user/view.twig', array(
-            'layout_template' => $this->layoutTemplate,
+        return $app['twig']->render($app['user.templates']['view'], array(
+            'layoutTemplate' => $app['user.templates']['layoutTemplate'],
             'user' => $user,
         ));
 
     }
 
-    public function viewSelfAction(Application $app) {
+    public function viewSelfAction(Application $app)
+    {
         if (!$app['user']) {
             return $app->redirect($app['url_generator']->generate('user.login'));
         }
         return $app->redirect($app['url_generator']->generate('user.view', array('id' => $app['user']->getId())));
     }
 
+    public function recoveryAction(Application $app)
+    {
+        return $app['twig']->render(
+            $app['user.templates']['recovery'], array(
+            'layoutTemplate' => $app['user.templates']['layoutTemplate'],
+        ));
+    }
+
 
     public function listAction(Application $app, Request $request)
     {
-        return $app['twig']->render('@user/list.twig', array(
-            'layout_template' => $this->layoutTemplate,
+        return $app['twig']->render('@User/list.twig', array(
+            'layoutTemplate' => $app['user.templates']['layoutTemplate'],
             'users' => $app['user.manager']->getAllUsers()
         ));
     }

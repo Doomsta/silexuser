@@ -19,10 +19,6 @@ class Role implements RoleInterface
      */
     private $id;
 
-    /**
-     * @ORM\Column(name="name", type="string", length=30)
-     */
-    private $name;
 
     /**
      * @ORM\Column(name="role", type="string", length=20, unique=true)
@@ -53,5 +49,46 @@ class Role implements RoleInterface
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Add users
+     *
+     * @param User $users
+     * @return Role
+     */
+    public function addUser(User $users)
+    {
+        $this->users[] = $users;
+
+        return $this;
+    }
+
+    /**
+     * Remove users
+     *
+     * @param User $users
+     */
+    public function removeUser(User $users)
+    {
+        $this->users->removeElement($users);
+    }
+
+    /**
+     * Get users
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getUsers()
+    {
+        return $this->users;
+    }
+
+    /**
+     * @param string $role
+     */
+    public function setRole($role)
+    {
+        $this->role = $role;
     }
 }

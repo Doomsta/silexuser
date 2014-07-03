@@ -1,0 +1,36 @@
+{% block loginWidget %}
+    <div class="widget loginWidget">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Login</h3>
+            </div>
+            <div class="panel-body">
+                {% block form %}
+                    <form role="form" action="{{ path('user.checkLogin') }}" method="post">
+                        {% if error is defined %}
+                            <div class="alert alert-dismissable alert-danger">
+                                <button type="button" class="close" data-dismiss="alert"
+                                        aria-hidden="true">&times;</button>
+                                {{ error }}
+                            </div>
+                        {% endif %}
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" name="_username"
+                                   value="{{ last_username | default('') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name="_password" value="">
+                        </div>
+                        {% block buttons %}
+                            <a href="{{ path('user.register') }}" class="btn btn-link pull-right">Register</a>
+                            <button type="submit" class="btn">Login</button>
+                            <a href="{{ path('user.recovery') }}" class="btn btn-link">Recover Password</a>
+                        {% endblock buttons %}
+                    </form>
+                {% endblock form %}
+            </div>
+        </div>
+    </div>
+{% endblock loginWidget %}

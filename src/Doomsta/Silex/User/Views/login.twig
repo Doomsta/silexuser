@@ -1,58 +1,31 @@
-{% extends layout_template  %}
+{% extends layoutTemplate  %}
 
 {% block title %}Sign in{% endblock %}
 
 {% block content %}
-
-    {% if app.user %}
-        <p>Hello, {{ app.user.username }}.</p>
-        <p><a href="{{ path('user.logout') }}">Sign out</a></p>
-
-    {% else %}
-        <div class="page-header">
-            <h1>
-                Sign in<br/>
-                <small>Don't have an account? <a href="{{ path('user.register') }}">Register now.</a></small>
-            </h1>
-        </div>
-
-        {% if error %}
-            <div class="alert alert-error">{{ error|nl2br }}</div>
-        {% endif %}
-
-        <form class="form-horizontal" method="POST" action="{{ path('user.login_check') }}">
-
-            <div class="control-group">
-                <label class="control-label" for="inputUserName">Username</label>
-                <div class="controls">
-                    <input name="_username" type="text" id="inputUsername" placeholder="name" required value="{{ last_username }}">
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" for="inputPassword">Password</label>
-                <div class="controls">
-                    <input name="_password" type="password" id="inputPassword" required placeholder="Password">
-                </div>
-            </div>
-
-            {% if allowRememberMe %}
-                <div class="control-group">
-                    <div class="controls">
-                        <label class="checkbox">
-                            <input type="checkbox" name="_remember_me" value="true" checked> Remember me
-                        </label>
-                    </div>
+    {% block form %}
+        <form role="form" action="{{ path('user.checkLogin') }}" method="post">
+            {% if error is defined and error %}
+                <div class="alert alert-dismissable alert-danger">
+                    <button type="button" class="close" data-dismiss="alert"
+                            aria-hidden="true">&times;</button>
+                    {{ error }}
                 </div>
             {% endif %}
-
-            <div class="control-group">
-                <div class="controls">
-                    <button type="submit" class="btn">Sign in</button>
-                </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="_username"
+                       value="{{ last_username | default('') }}">
             </div>
-
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="_password" value="">
+            </div>
+            {% block buttons %}
+                <a href="{{ path('user.register') }}" class="btn btn-link pull-right">Register</a>
+                <button type="submit" class="btn">Login</button>
+                <a href="{{ path('user.recovery') }}" class="btn btn-link">Recover Password</a>
+            {% endblock buttons %}
         </form>
-
-    {% endif %}
+    {% endblock form %}
 {% endblock %}

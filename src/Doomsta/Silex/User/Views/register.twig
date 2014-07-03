@@ -1,63 +1,24 @@
-{% extends layout_template  %}
+{% extends layoutTemplate  %}
 
 {% block title %}Register{% endblock %}
 
 {% block content %}
-
-    {% if app.user %}
-        <p>Hello, {{ app.user.username }}. You are already registered and signed in.</p>
-        <p><a href="{{ path('user.logout') }}">Sign out</a></p>
-
-    {% else %}
-        <div class="page-header">
-            <h1>
-                Create an account<br/>
-                <small>Already have an account? <a href="{{ path('user.login') }}">Sign in now.</a></small>
-            </h1>
-        </div>
-
-        {% if error %}
-            <div class="alert alert-error">{{ error|nl2br }}</div>
-        {% endif %}
-
-        <form class="form-horizontal" method="POST">
-
-            <div class="control-group">
-                <label class="control-label" for="input-name">Name</label>
-                <div class="controls">
-                    <input name="name" type="text" id="input-name" placeholder="Name" value="{{ name }}">
-                    <span class="help-inline">Shown publicly</span>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" for="input-email">Email</label>
-                <div class="controls">
-                    <input name="email" type="email" id="input-email" placeholder="Email" required value="{{ email }}">
-                    <span class="help-inline">Never shared</span>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" for="input-password">Password</label>
-                <div class="controls">
-                    <input name="password" type="password" id="input-password" required placeholder="Password">
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" for="input-confirm-password">Confirm password</label>
-                <div class="controls">
-                    <input name="confirm_password" type="password" id="input-confirm-password" required placeholder="Confirm password">
-                </div>
-            </div>
-
-            <div class="control-group">
-                <div class="controls">
-                    <button type="submit" class="btn">Register</button>
-                </div>
-            </div>
-        </form>
-
-    {% endif %}
+    {% form_theme form '@User/Layout/form_theme.twig' %}
+    {% block form %}
+        {{ form_start(form) }}
+        {{ form_errors(form) }}
+        {% for child in form %}
+            {% if child.vars.name  == 'password' %}
+                {{ form_row(child.first) }}
+                {{ form_row(child.second) }}
+            {% elseif child.vars.name != '_token' %}
+                {{ form_row(child) }}
+            {% endif %}
+        {% endfor %}
+        {% block buttons %}
+            <a href="{{ path('user.login') }}" class="btn btn-link pull-right">Login</a>
+            <button type="submit" class="btn">Submit</button>
+        {% endblock buttons %}
+        {{ form_end(form) }}
+    {% endblock form %}
 {% endblock %}

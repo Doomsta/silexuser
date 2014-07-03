@@ -1,0 +1,11 @@
+{% use "@User/Widget/loginWidget.twig" %}
+{% use "@User/Widget/loggedinWidget.twig" %}
+
+{% block userWidget %}
+    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+        {{ render(url('user.widget.loggedin')) }}
+    {% else %}
+        {{ render(url('user.widget.login')) }}
+        {{ render(url('user.widget.register')) }}
+    {% endif %}
+{% endblock userWidget %}
